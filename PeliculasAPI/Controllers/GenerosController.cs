@@ -19,6 +19,8 @@ namespace PeliculasAPI.Controllers
             this.mapper = mapper;
         }
 
+        //CRUD de generos
+
         [HttpGet]
         public async Task<ActionResult<List<GeneroDTO>>> Get()
         {
@@ -30,11 +32,14 @@ namespace PeliculasAPI.Controllers
         [HttpGet("{id:int}", Name = "ObtenerGenero")]
         public async Task<ActionResult<GeneroDTO>> Get(int id)
         {
+            //Obtener la entidad desde la base de datos
             var entidad = await context.Generos.FirstOrDefaultAsync(x => x.Id == id);
+            //Si no existe retornar un 404
             if (entidad == null)
             {
                 return NotFound();
             }
+            //Mapear la entidad a un DTO
             var dto = mapper.Map<GeneroDTO>(entidad);
 
             return dto;
@@ -62,9 +67,15 @@ namespace PeliculasAPI.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult> Put(int id, [FromBody] GeneroCreacionDTO generoCreacionDTO)
         {
+            //Validar que el id exista en la base de datos
             var entidad = mapper.Map<Genero>(generoCreacionDTO);
+            //Si no existe retornar un 404
+            //Si existe se actualiza la entidad
+            //Se asigna el id a la entidad para que EF Core sepa que es una actualización
             entidad.Id = id;
+            //Se marca la entidad como modificada
             context.Entry(entidad).State = EntityState.Modified;
+            //Cambios a la base de datos
             await context.SaveChangesAsync();
             return NoContent();
         }
@@ -72,13 +83,17 @@ namespace PeliculasAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult> Delete(int id)
         {
+            //Validar que el id exista en la base de datos
             var existe = await context.Generos.AnyAsync(x => x.Id == id);
+            //Si no existe retornar un 404
             if (!existe)
             {
                 return NotFound();
             }
 
+            //Si existe se elimina la entidad
             context.Remove(new Genero() { Id = id });
+            //Cambios a la base de datos
             await context.SaveChangesAsync();
 
             return NoContent();
