@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PeliculasAPI.DTOs;
 using PeliculasAPI.Entidades;
+using PeliculasAPI.Helpers;
+using PeliculasAPI.Servicios;
 
 namespace PeliculasAPI.Controllers
 {
@@ -14,16 +16,22 @@ namespace PeliculasAPI.Controllers
     {
         private readonly ApplicationDbContext context;
         private readonly IMapper mapper;
-        public ActoresController(ApplicationDbContext context, IMapper mapper)
+        private readonly IAlmacenadorArchivo almacenadorArchivo;
+        private readonly string contenedor = "actores";
+
+        public ActoresController(ApplicationDbContext context, IMapper mapper, IAlmacenadorArchivo almacenadorArchivo)
         {
             this.context = context;
             this.mapper = mapper;
+            this.almacenadorArchivo = almacenadorArchivo;
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<ActorDTO>>> Get()
+        public async Task<ActionResult<List<ActorDTO>>> Get([FromQuery] PaginacionDTO paginacionDTO)
         {
-            var entidades = await context.Actores.ToListAsync();
+            var queryable = context.Actores.AsQueryable();
+            await HttpContext.InsertarParametrosPaginacion(queryable, paginacionDTO.CantidadRegistrosPorPaguina);
+            var entidades = await queryable.Paginar(paginacionDTO).ToListAsync();
             return mapper.Map<List<ActorDTO>>(entidades);
         }
 
@@ -45,20 +53,46 @@ namespace PeliculasAPI.Controllers
         public async Task<ActionResult> Post([FromForm] ActorCreacionDTO actorCreacionDTO)
         {
             var entidad = mapper.Map<Actor>(actorCreacionDTO);
+            if (actorCreacionDTO.Foto != null)
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    await actorCreacionDTO.Foto.CopyToAsync(memoryStream);
+                    var contenido = memoryStream.ToArray();
+                    var extension = Path.GetExtension(actorCreacionDTO.Foto.FileName);
+                    entidad.Foto = await almacenadorArchivo.GuardarArchivo(contenido, extension, contenedor, actorCreacionDTO.Foto.ContentType);
+                }
+            }
             context.Add(entidad);
             await context.SaveChangesAsync();
             var dto = mapper.Map<ActorDTO>(entidad);
+            dto.Foto = entidad.Foto;
             return new CreatedAtRouteResult("ObtenerActor",new { id = entidad.Id }, dto);
         }
 
         [HttpPut("{id}")]
         public async Task<ActionResult> Put(int id, [FromForm] ActorCreacionDTO actorCreacionDTO)
         {
-            var entidad = mapper.Map<Actor>(actorCreacionDTO);
-            entidad.Id = id;
-            context.Entry(entidad).State = EntityState.Modified;
+            var actorDB = await context.Actores.FirstOrDefaultAsync(x => x.Id == id);
+
+            if (actorDB == null) { return NotFound(); }
+
+            actorDB = mapper.Map(actorCreacionDTO, actorDB);
+
+            if (actorCreacionDTO.Foto != null)
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    await actorCreacionDTO.Foto.CopyToAsync(memoryStream);
+                    var contenido = memoryStream.ToArray();
+                    var extension = Path.GetExtension(actorCreacionDTO.Foto.FileName);
+                    actorDB.Foto = await almacenadorArchivo.EditarArchivo(contenido, extension, contenedor,actorDB.Foto, actorCreacionDTO.Foto.ContentType);
+                }
+            }
+
             await context.SaveChangesAsync();
             return NoContent();
+
         }
 
         [HttpPatch("{id}")]
