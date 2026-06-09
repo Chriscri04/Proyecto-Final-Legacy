@@ -1,6 +1,7 @@
 ﻿namespace PeliculasAPI.Validaciones
 {
-    public class GrupoTipoArchivo
+    public enum GrupoTipoArchivo
     {
+        Imagen
     }
 }

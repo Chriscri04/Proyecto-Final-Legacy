@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using PeliculasAPI.Servicios;
 
 namespace PeliculasAPI
 {
@@ -18,10 +19,14 @@ namespace PeliculasAPI
 
             services.AddAutoMapper(typeof(Startup)); // Configura AutoMapper
 
+            services.AddTransient<IAlmacenadorArchivo, AlmacenadorArchivosLocal>(); // Configura el servicio de almacenamiento de archivos
+            services.AddHttpContextAccessor(); // Configura el acceso al contexto HTTP para obtener información de la solicitud actual
+
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
 
-            services.AddControllers();
+            services.AddControllers()
+                .AddNewtonsoftJson();
             
         }
 
@@ -33,6 +38,8 @@ namespace PeliculasAPI
             }
 
             app.UseHttpsRedirection();
+
+            app.UseStaticFiles(); // Habilita el uso de archivos estáticos, como imágenes
 
             app.UseRouting();
 
