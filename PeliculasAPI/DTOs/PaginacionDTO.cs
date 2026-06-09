@@ -7,7 +7,7 @@
         private int cantidadRegistrosPorPagina = 10;
         private readonly int cantidadMaximaRegistrosPorPagina = 50;
 
-        public int CantidadRegistrosPorPaguina
+        public int CantidadRegistrosPorPagina
         {
             get => cantidadRegistrosPorPagina;
             set
