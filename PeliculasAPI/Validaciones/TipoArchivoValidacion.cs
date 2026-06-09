@@ -11,6 +11,8 @@ namespace PeliculasAPI.Validaciones
             this.tiposValidos = tiposValidos;
         }
 
+        //Fluent?
+
         public TipoArchivoValidacion(GrupoTipoArchivo grupoTipoArchivo)
         {
             if (grupoTipoArchivo == GrupoTipoArchivo.Imagen)

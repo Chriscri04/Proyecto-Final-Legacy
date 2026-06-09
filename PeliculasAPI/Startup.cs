@@ -17,7 +17,7 @@ namespace PeliculasAPI
         {
             // Configuración de servicios, como controladores, bases de datos, etc.
 
-            services.AddAutoMapper(typeof(Startup)); // Configura AutoMapper
+            services.AddAutoMapper(typeof(Startup)); // Configura AutoMapper, Registrar cada mapper para cada profile  (reflexion [caro en recursos]) 
 
             services.AddTransient<IAlmacenadorArchivo, AlmacenadorArchivosLocal>(); // Configura el servicio de almacenamiento de archivos
             services.AddHttpContextAccessor(); // Configura el acceso al contexto HTTP para obtener información de la solicitud actual
