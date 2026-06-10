@@ -13,14 +13,14 @@ namespace PeliculasAPI.Controllers
 {
     [ApiController]
     [Route("api/peliculas")]
-    public class PeliculasController: ControllerBase
+    public class PeliculasController: CustomBaseController
     {
         private readonly ApplicationDbContext context;
         private readonly IMapper mapper;
         private readonly IAlmacenadorArchivo almacenadorArchivo;
         private readonly string contenedor = "peliculas";
 
-        public PeliculasController(ApplicationDbContext context, IMapper mapper, IAlmacenadorArchivo almacenadorArchivo)
+        public PeliculasController(ApplicationDbContext context, IMapper mapper, IAlmacenadorArchivo almacenadorArchivo):base(context,mapper)
         {
             this.context = context;
             this.mapper = mapper;
@@ -166,52 +166,13 @@ namespace PeliculasAPI.Controllers
         [HttpPatch("{id}")]
         public async Task<ActionResult> Patch(int id, [FromBody] JsonPatchDocument<PeliculaPatchDTO> patchDocument)
         {
-            if (patchDocument == null)
-            {
-                return BadRequest();
-            }
-
-            var entidadDB = await context.Peliculas.FirstOrDefaultAsync(x => x.Id == id);
-
-            if (entidadDB == null)
-            {
-                return NotFound();
-            }
-
-            var entidadDTO = mapper.Map<PeliculaPatchDTO>(entidadDB);
-            patchDocument.ApplyTo(entidadDTO, ModelState);
-
-            var esValido = TryValidateModel(entidadDTO);
-
-            if (!esValido)
-            {
-                return BadRequest(ModelState);
-            }
-
-            mapper.Map(entidadDTO, entidadDB);
-
-            await context.SaveChangesAsync();
-
-            return NoContent();
+           return await Patch<Pelicula, PeliculaPatchDTO>(id, patchDocument);
         }
 
         [HttpDelete("{id}")]
         public async Task<ActionResult> Delete(int id)
         {
-            //Validar que el id exista en la base de datos
-            var existe = await context.Peliculas.AnyAsync(x => x.Id == id);
-            //Si no existe retornar un 404
-            if (!existe)
-            {
-                return NotFound();
-            }
-
-            //Si existe se elimina la entidad
-            context.Remove(new Pelicula() { Id = id });
-            //Cambios a la base de datos
-            await context.SaveChangesAsync();
-
-            return NoContent();
+            return await Delete<Pelicula>(id);
         }
     }
 }
