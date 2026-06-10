@@ -53,6 +53,7 @@ namespace PeliculasAPI.Controllers
         public async Task<ActionResult<List<PeliculasDTO>>> Filtrar([FromQuery] FiltroPeliculaDTO filtroPeliculaDTO)
         {
             var peliculasQueryable = context.Peliculas.AsQueryable();
+            var hoy = DateTime.Today;
 
             if (!string.IsNullOrEmpty(filtroPeliculaDTO.Titulo))
             {
