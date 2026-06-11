@@ -1,9 +1,13 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using NetTopologySuite;
 using NetTopologySuite.Geometries;
 using PeliculasAPI.Helpers;
 using PeliculasAPI.Servicios;
+using System.Text;
 
 namespace PeliculasAPI
 {
@@ -27,6 +31,8 @@ namespace PeliculasAPI
 
             services.AddSingleton<GeometryFactory>(NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326));
 
+            services.AddScoped<PeliculaExisteAttribute>();
+
             services.AddSingleton(provider =>
 
                 new MapperConfiguration(config =>
@@ -41,6 +47,28 @@ namespace PeliculasAPI
 
             services.AddControllers()
                 .AddNewtonsoftJson();
+
+            // Configura Identity (usuarios/roles) y los proveedores de tokens.
+            // Los tokens JWT se configuran más abajo usando una clave simétrica definida en appsettings.
+            services.AddIdentity<IdentityUser,  IdentityRole>()
+                .AddEntityFrameworkStores<ApplicationDbContext>()
+                .AddDefaultTokenProviders();
+
+            // Configura autenticación JWT (validación de token).
+            // La clave simétrica se lee desde appsettings.Development.json (jwt:key).
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options => 
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = false,
+                        ValidateAudience = false,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(
+                            Encoding.UTF8.GetBytes(Configuration["jwt:key"])),
+                        ClockSkew = TimeSpan.Zero
+                    }
+                );
             
         }
 
@@ -57,6 +85,9 @@ namespace PeliculasAPI
 
             app.UseRouting();
 
+            // Habilita primero el middleware de autenticación para que procese el token
+            // y luego el middleware de autorización que comprueba permisos/roles.
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
